@@ -139,5 +139,4 @@ void sendData(uint8_t messageType, char *dataText, uint8_t dataValue);
 /// @param accX
 /// @param accY
 /// @param accZ
-void sendMPUData(float gyroX, float gyroY, float gyroZ, float accX, float accY, float accZ)
-
+void sendMPUData(float gyroX, float gyroY, float gyroZ, float accX, float accY, float accZ);
