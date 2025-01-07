@@ -389,6 +389,7 @@ bool initESPNOW(uint8_t DEVICE_TYPE, uint8_t DEBUG_SETTING)
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len)
 {
   uint8_t type = incomingData[0]; // first message byte is the type of message
+  Serial.println("Data received");
 
   switch (type)
   {

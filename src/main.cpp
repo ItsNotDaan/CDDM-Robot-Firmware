@@ -53,8 +53,8 @@ Adafruit_MPU6050 mpu;
 
 // ----- Declare Constants -----
 
-#define DEBUG_GYRO true
-#define DEBUG_MOTOR true
+#define DEBUG_GYRO false
+#define DEBUG_MOTOR false
 #define DEBUG_ESPNOW true
 #define DEBUG_SYSTEM true
 
@@ -89,7 +89,7 @@ CRGB leds[NUM_LEDS];
 
 /*************For ESP-NOW******************/
 // Device type (MASTER or SLAVE)
-#define DEVICE_TYPE MASTER
+#define DEVICE_TYPE SLAVE
 // Debug setting (DEBUG_ON or DEBUG_OFF)
 #define DEBUG_SETTING DEBUG_ON
 
@@ -151,13 +151,10 @@ void IRAM_ATTR onTimer() {
 // Setup
 void setup()
 {
-  Serial.begin(115200); // Start the serial monitor
+  Serial.begin(115200); // Start the serial monitor at 115200 baud
 
   //Wire
   Wire.begin(MCU_SDA, MCU_SCL, 1000000); // Start the I2C communication
-
-  //OnTimer Init
-  init_TIMER();
 
   //Button
   pinMode(MCU_BUTTON, INPUT_PULLUP);
@@ -172,15 +169,15 @@ void setup()
   leds[2] = CRGB::Red;
   FastLED.show();
 
-  //ESPNOW
-  // if (initESPNOW(DEVICE_TYPE, DEBUG_SETTING) == false)
-  // {
-  //   Serial.println("ESP-NOW initialization failed");
-  //   ESP.restart();
-  // }
+  // ESPNOW
+  if (initESPNOW(DEVICE_TYPE, DEBUG_SETTING) == false)
+  {
+    Serial.println("ESP-NOW initialization failed");
+    ESP.restart();
+  }
 
-  // startPairingProcess();
-  // setReceivedMessageOnMonitor(true);
+  startPairingProcess();
+  setReceivedMessageOnMonitor(DEBUG_ESPNOW);
 
   //Stepper Motor
   StepperR.setMaxSpeed(STEPPER_MAX_SPEED);
@@ -195,6 +192,9 @@ void setup()
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 
+  //OnTimer Init
+  // init_TIMER();
+
   delay(2000);
   FastLED.clear(true);
 
@@ -203,6 +203,11 @@ void setup()
 // Main loop
 void loop()
 {
+  //ESPNOW
+  checkPairingModeStatus(5000); // Check the pairing mode status every 5 seconds if pairing mode is active.
+
+
+
   //Check the IO9 Button on the SOM.
   if ((digitalRead(MCU_BUTTON) == LOW) && (buttonState == HIGH)){
     //Reset the zero position of the gyro/accel
