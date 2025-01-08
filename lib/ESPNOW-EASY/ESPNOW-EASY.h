@@ -42,6 +42,7 @@ enum MessageType
 {
   PAIRING,
   DATA,
+  GYRO,
 };
 
 // Struct for pairing
@@ -81,6 +82,10 @@ extern MessageType messageType;
 extern struct_message sendingData;   // data to send
 extern struct_message recievingData; // data received
 extern struct_pairing pairingData;   // pairing data
+
+// Create two structs for the gyroscope data
+extern struct_gyro mpuReceivingData;
+extern struct_gyro mpuSendingData;
 
 
 
@@ -125,7 +130,6 @@ void checkPairingModeStatus(unsigned long WAIT_TIME_MS);
 /// @brief This function will tell the program to write the incoming data to the Serial.Monitor.
 void setReceivedMessageOnMonitor(bool state);
 
-
 /// @brief This function will send data to the other device. Using ESP-NOW.
 /// @param messageType
 /// @param dataText
@@ -139,4 +143,4 @@ void sendData(uint8_t messageType, char *dataText, uint8_t dataValue);
 /// @param accX
 /// @param accY
 /// @param accZ
-void sendMPUData(float gyroX, float gyroY, float gyroZ, float accX, float accY, float accZ);
+void sendMpuData(float gyroX, float gyroY, float gyroZ, float accX, float accY, float accZ);

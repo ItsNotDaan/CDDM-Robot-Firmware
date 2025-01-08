@@ -25,7 +25,7 @@ struct_message receivingData; // data received
 struct_pairing pairingData;   // pairing data
 
 // Create a struct for the gyroscope data
-struct_gyro mpuData;
+struct_gyro mpuReceivingData;
 
 
 /***************************************checkPairingModeStatus********************************************/
@@ -389,7 +389,6 @@ bool initESPNOW(uint8_t DEVICE_TYPE, uint8_t DEBUG_SETTING)
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len)
 {
   uint8_t type = incomingData[0]; // first message byte is the type of message
-  Serial.println("Data received");
 
   switch (type)
   {
@@ -424,6 +423,9 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len)
       printDebugData(type);
     }
 
+  case GYRO: // the message is gyroscope/accelerometer type
+    memcpy(&mpuReceivingData, incomingData, sizeof(mpuReceivingData));
+  
     break;
 
   default:
@@ -458,6 +460,23 @@ void printDebugData(uint8_t messageType)
       if (i < 5)
         Serial.print(":");
     }
+    Serial.println();
+    break;
+
+  case GYRO:
+    Serial.println("Gyroscope/Accelerometer data recieved:");
+    Serial.print("Gyro X: ");
+    Serial.println(mpuReceivingData.gyroX);
+    Serial.print("Gyro Y: ");
+    Serial.println(mpuReceivingData.gyroY);
+    Serial.print("Gyro Z: ");
+    Serial.println(mpuReceivingData.gyroZ);
+    Serial.print("Acc X: ");
+    Serial.println(mpuReceivingData.accX);
+    Serial.print("Acc Y: ");
+    Serial.println(mpuReceivingData.accY);
+    Serial.print("Acc Z: ");
+    Serial.println(mpuReceivingData.accZ);
     Serial.println();
     break;
 
@@ -544,7 +563,7 @@ void sendData(uint8_t messageType, char *dataText, uint8_t dataValue)
   }
 }
 
-/***************************************sendMPUData********************************************/
+/***************************************sendMpuData********************************************/
 /// @brief This function will send the gyroscope/Accel data to the other device. Using ESP-NOW.
 /// @param gyroX
 /// @param gyroY
@@ -552,23 +571,23 @@ void sendData(uint8_t messageType, char *dataText, uint8_t dataValue)
 /// @param accX
 /// @param accY
 /// @param accZ
-void sendMPUData(float gyroX, float gyroY, float gyroZ, float accX, float accY, float accZ)
+void sendMpuData(float gyroX, float gyroY, float gyroZ, float accX, float accY, float accZ)
 {
-  mpuData.msgType = DATA;
-  mpuData.gyroX = gyroX;
-  mpuData.gyroY = gyroY;
-  mpuData.gyroZ = gyroZ;
-  mpuData.accX = accX;
-  mpuData.accY = accY;
-  mpuData.accZ = accZ;
+  mpuSendingData.msgType = GYRO;
+  mpuSendingData.gyroX = gyroX;
+  mpuSendingData.gyroY = gyroY;
+  mpuSendingData.gyroZ = gyroZ;
+  mpuSendingData.accX = accX;
+  mpuSendingData.accY = accY;
+  mpuSendingData.accZ = accZ;
 
   switch (deviceType)
   {
   case MASTER:
-    esp_now_send(SlaveMacAddress, (const uint8_t *)&mpuData, sizeof(mpuData));
+    esp_now_send(SlaveMacAddress, (const uint8_t *)&mpuSendingData, sizeof(mpuSendingData));
     break;
   case SLAVE:
-    esp_now_send(MasterMacAddress, (const uint8_t *)&mpuData, sizeof(mpuData));
+    esp_now_send(MasterMacAddress, (const uint8_t *)&mpuSendingData, sizeof(mpuSendingData));
     break;
   default:
     Serial.println("No device type selected \n Please select a device type to send data.");

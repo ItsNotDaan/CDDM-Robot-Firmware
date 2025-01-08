@@ -124,16 +124,14 @@ bool buttonState = false;
 float accY, accZ, gyroX;
 volatile int motorPower, gyroRate;
 volatile float accAngle, gyroAngle, currentAngle, prevAngle=0, error, prevError=0, errorSum=0;
-volatile byte count=0;
-int distanceCm;
 
 float wishedAngle = 0;
 float targetAngle = 0;
 float zeroAngle = 0;
 
-unsigned long lastTime = 0;
-unsigned long currentTime = 0;
-long wishedTime = 100;
+// unsigned long lastTime = 0;
+// unsigned long currentTime = 0;
+// long wishedTime = 100;
 
 int speedLeft = 0;
 int speedRight = 0;
@@ -170,7 +168,7 @@ void setup()
   FastLED.show();
 
   // ESPNOW
-  if (initESPNOW(DEVICE_TYPE, DEBUG_SETTING) == false)
+  if (!initESPNOW(DEVICE_TYPE, DEBUG_SETTING))
   {
     Serial.println("ESP-NOW initialization failed");
     ESP.restart();
@@ -205,8 +203,6 @@ void loop()
 {
   //ESPNOW
   checkPairingModeStatus(5000); // Check the pairing mode status every 5 seconds if pairing mode is active.
-
-
 
   //Check the IO9 Button on the SOM.
   if ((digitalRead(MCU_BUTTON) == LOW) && (buttonState == HIGH)){
@@ -252,20 +248,12 @@ void loop()
   StepperR.runSpeed();
 }
 
+//use the incoming sendMpuData and display it on the serial monitor
+/*
 
 /***********************************init_TIMER******************************************/
 /// @brief This function will initialize the PID loop using the hw_timer_t library.
 void init_TIMER() {  
-  // // Set timer frequency to 1Mhz
-  // timer = timerBegin(1000000);
-
-  // // Attach onTimer function to our timer.
-  // timerAttachInterrupt(timer, &onTimer);
-
-  // // Set alarm to call onTimer function every second (value in microseconds).
-  // // Repeat the alarm (third parameter) with unlimited count = 0 (fourth parameter).
-  // timerAlarm(timer, ONTIMER_ALARM_TIME, true, 0);
-
 
   // Create a timer with a 1 MHz frequency
   timer = timerBegin(0, 80, true); // Timer 0, prescaler 80 (1 MHz), count up
