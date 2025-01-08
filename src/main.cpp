@@ -53,7 +53,7 @@ Adafruit_MPU6050 mpu;
 
 // ----- Declare Constants -----
 
-#define DEBUG_GYRO false
+#define DEBUG_GYRO true
 #define DEBUG_MOTOR false
 #define DEBUG_ESPNOW true
 #define DEBUG_SYSTEM true
@@ -193,7 +193,7 @@ void setup()
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 
   //OnTimer Init
-  // init_TIMER();
+  init_TIMER();
 
   delay(2000);
   FastLED.clear(true);
@@ -315,6 +315,8 @@ void PID_Calc() {
     Serial.println(targetAngle);
     Serial.print("Motor Power: ");
     Serial.println(motorPower);
+    Serial.println("Error: ");
+    Serial.println(error);
     Serial.println("");
   }
 }
