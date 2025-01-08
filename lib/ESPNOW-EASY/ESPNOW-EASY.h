@@ -125,7 +125,7 @@ bool setDeviceType(uint8_t type);
 bool setDebugSetting(uint8_t setting);
 
 /// @param WAIT_TIME_MS Must be greater than 1000 milliseconds.
-void checkPairingModeStatus(unsigned long WAIT_TIME_MS);
+bool checkPairingModeStatus(unsigned long WAIT_TIME_MS);
 
 /// @brief This function will tell the program to write the incoming data to the Serial.Monitor.
 void setReceivedMessageOnMonitor(bool state);

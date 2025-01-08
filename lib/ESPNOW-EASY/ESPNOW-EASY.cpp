@@ -28,11 +28,10 @@ struct_pairing pairingData;   // pairing data
 struct_gyro mpuReceivingData;
 struct_gyro mpuSendingData;
 
-
 /***************************************checkPairingModeStatus********************************************/
 /// @brief This function will check if the pairing mode is active and reset the pairing process if the WAIT_TIME_MS has passed.
 /// @param WAIT_TIME_MS Must be greater than 1000 milliseconds.
-void checkPairingModeStatus(unsigned long WAIT_TIME_MS)
+bool checkPairingModeStatus(unsigned long WAIT_TIME_MS)
 {
   static unsigned long lastEventTime = millis();
   static unsigned long EVENT_INTERVAL_MS;
@@ -61,6 +60,8 @@ void checkPairingModeStatus(unsigned long WAIT_TIME_MS)
       startPairingProcess();
     }
   }
+
+  return true;
 }
 
 /***************************************pairingProcessMaster********************************************/
@@ -432,7 +433,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len)
     {
       printDebugData(type);
     }
-  
+
     break;
 
   default:
@@ -548,8 +549,8 @@ void setReceivedMessageOnMonitor(bool state)
 /***************************************sendData********************************************/
 /// @brief This function will send data to the other device. Using ESP-NOW.
 /// @param messageType DATA or PAIRING
-/// @param dataText 
-/// @param dataValue 
+/// @param dataText
+/// @param dataValue
 void sendData(uint8_t messageType, char *dataText, uint8_t dataValue)
 {
   sendingData.msgType = messageType;
@@ -601,4 +602,3 @@ void sendMpuData(float gyroX, float gyroY, float gyroZ, float accX, float accY, 
     break;
   }
 }
-

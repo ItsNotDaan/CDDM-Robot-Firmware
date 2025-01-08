@@ -54,7 +54,7 @@
 
 // ----- Declare Constants -----
 // Debug Settings (true or false)
-#define DEBUG_GYRO false
+#define DEBUG_GYRO true
 #define DEBUG_MOTOR false
 #define DEBUG_ESPNOW false
 #define DEBUG_SYSTEM true
@@ -81,10 +81,10 @@
 #define STEPPER_ACCELERATION 500
 
 // PID Settings
-#define PID_KP 40             // proportional gain
-#define PID_KD 0.05           // derivative gain
-#define PID_KI 40             // integral gain
-#define PID_SAMPLE_TIME 0.005 // 5 milliseconds (in seconds)
+#define PID_KP 50 // proportional gain
+#define PID_KD 0 // derivative gain
+#define PID_KI 10 // integral gain
+#define PID_SAMPLE_TIME 0.003 // 5 milliseconds (in seconds)
 
 // ESP-NOW settings
 #define DEVICE_TYPE SLAVE      // Device type (MASTER or SLAVE)
@@ -152,6 +152,7 @@ void setup()
   leds[1] = CRGB::Blue;
   leds[2] = CRGB::Red;
   FastLED.show();
+  
 
   // ESPNOW
   if (!initESPNOW(DEVICE_TYPE, DEBUG_SETTING))
@@ -162,6 +163,16 @@ void setup()
 
   startPairingProcess();
   setReceivedMessageOnMonitor(DEBUG_ESPNOW);
+
+  // Serial.println("Pairing mode is not active");
+  // leds[0] = CRGB::Red;
+  // FastLED.show();
+
+  // checkPairingModeStatus(5000); // Check the pairing mode status every 5 seconds if pairing mode is active.
+  
+  // leds[0] = CRGB::Green;
+  // FastLED.show();
+
 
   // Stepper Motor
   StepperR.setMaxSpeed(STEPPER_MAX_SPEED);
@@ -180,6 +191,7 @@ void setup()
   init_TIMER();
 
   delay(2000);
+
   FastLED.clear(true);
 }
 
@@ -188,6 +200,18 @@ void loop()
 {
   // ESPNOW
   checkPairingModeStatus(5000); // Check the pairing mode status every 5 seconds if pairing mode is active.
+  if (pairingMode == true)
+  {
+    Serial.println("Pairing mode is active");
+    leds[0] = CRGB::Red;
+    FastLED.show();
+  }
+  else
+  {
+    Serial.println("Pairing mode is not active");
+    leds[0] = CRGB::Green;
+    FastLED.show();
+  }
 
   // Check if the zero button is pressed
   checkZeroButton();
@@ -274,7 +298,7 @@ void PID_Calc()
   prevAngle = currentAngle;
 
   // DEBUG information
-  if (DEBUG_GYRO)
+  if (DEBUG_MOTOR)
   {
     Serial.print("Current Angle: ");
     Serial.println(currentAngle);
@@ -316,9 +340,9 @@ void readGyroscope()
 void updateMotors()
 {
   // Constrain the motor power
-  motorPower = constrain(motorPower, -255, 255);
+  motorPower = constrain(motorPower, -500, 500);
   StepperL.setSpeed(motorPower);
-  StepperR.setSpeed(motorPower);
+  StepperR.setSpeed(-motorPower);
 
   // Run the motors at the set speed
   StepperL.runSpeed();
