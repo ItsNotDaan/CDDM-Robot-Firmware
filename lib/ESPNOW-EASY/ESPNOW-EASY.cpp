@@ -26,6 +26,7 @@ struct_pairing pairingData;   // pairing data
 
 // Create a struct for the gyroscope data
 struct_gyro mpuReceivingData;
+struct_gyro mpuSendingData;
 
 
 /***************************************checkPairingModeStatus********************************************/
@@ -425,6 +426,12 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len)
 
   case GYRO: // the message is gyroscope/accelerometer type
     memcpy(&mpuReceivingData, incomingData, sizeof(mpuReceivingData));
+
+    // FOR DEBUGGING
+    if (receivedMessageOnMonitor)
+    {
+      printDebugData(type);
+    }
   
     break;
 
