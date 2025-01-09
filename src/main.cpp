@@ -35,6 +35,7 @@
   V4(0.4) - Not working properly. The library is not importing. timerAPI is also different from the VSCode one. Arduino timer API and other one.
   V5(0.5) - Working motors and gyroscope with zerobutton. The timer is working as well. ESPNOW is working as well.
   0.6 - Cleanin up the code. Adding comments. TO-DO: PID tuning.
+  0.7 - Values on the robot can be changed using the controller. dataReceivedCheck() function is added.
 */
 
 // include libraries
@@ -54,7 +55,7 @@
 
 // ----- Declare Constants -----
 // Debug Settings (true or false)
-#define DEBUG_GYRO true
+#define DEBUG_GYRO false
 #define DEBUG_MOTOR false
 #define DEBUG_ESPNOW false
 #define DEBUG_SYSTEM true
@@ -81,14 +82,11 @@
 #define STEPPER_ACCELERATION 500
 
 // PID Settings
-#define PID_KP 50 // proportional gain
-#define PID_KD 0 // derivative gain
-#define PID_KI 10 // integral gain
-#define PID_SAMPLE_TIME 0.003 // 5 milliseconds (in seconds)
+#define PID_SAMPLE_TIME 0.005 // 5 milliseconds (in seconds)
 
 // ESP-NOW settings
 #define DEVICE_TYPE SLAVE      // Device type (MASTER or SLAVE)
-#define DEBUG_SETTING DEBUG_ON // Debug setting (DEBUG_ON or DEBUG_OFF)
+#define DEBUG_SETTING DEBUG_OFF // Debug setting (DEBUG_ON or DEBUG_OFF)
 
 // Timer settings (Set alarm to call onTimer function every second (value in microseconds).)
 #define ONTIMER_ALARM_TIME PID_SAMPLE_TIME * 1000000 // 5 miliseconds
@@ -115,6 +113,7 @@ void PID_Calc();
 void readGyroscope();
 void checkZeroButton();
 void updateMotors();
+void dataReceivedCheck();
 
 // ----- Declare Global Variables -----
 // Button Variable
@@ -128,6 +127,10 @@ volatile float accAngle, gyroAngle, currentAngle, prevAngle = 0, error, prevErro
 float wishedAngle = 0;
 float targetAngle = 0;
 float zeroAngle = 0;
+
+float PID_KP = 0.0; // proportional gain
+float PID_KI = 0.0; // integral gain
+float PID_KD = 0.0; // derivative gain
 
 // Timer Flag
 bool pidFlag = false;
@@ -152,7 +155,6 @@ void setup()
   leds[1] = CRGB::Blue;
   leds[2] = CRGB::Red;
   FastLED.show();
-  
 
   // ESPNOW
   if (!initESPNOW(DEVICE_TYPE, DEBUG_SETTING))
@@ -163,16 +165,6 @@ void setup()
 
   startPairingProcess();
   setReceivedMessageOnMonitor(DEBUG_ESPNOW);
-
-  // Serial.println("Pairing mode is not active");
-  // leds[0] = CRGB::Red;
-  // FastLED.show();
-
-  // checkPairingModeStatus(5000); // Check the pairing mode status every 5 seconds if pairing mode is active.
-  
-  // leds[0] = CRGB::Green;
-  // FastLED.show();
-
 
   // Stepper Motor
   StepperR.setMaxSpeed(STEPPER_MAX_SPEED);
@@ -199,19 +191,20 @@ void setup()
 void loop()
 {
   // ESPNOW
-  checkPairingModeStatus(5000); // Check the pairing mode status every 5 seconds if pairing mode is active.
   if (pairingMode == true)
   {
-    Serial.println("Pairing mode is active");
+    // Serial.println("Pairing mode is active");
     leds[0] = CRGB::Red;
-    FastLED.show();
   }
   else
   {
-    Serial.println("Pairing mode is not active");
+    // Serial.println("Pairing mode is not active");
     leds[0] = CRGB::Green;
-    FastLED.show();
   }
+  FastLED.show();
+
+  // Check the pairing mode status every 5 seconds if pairing mode is active.
+  checkPairingModeStatus(5000);
 
   // Check if the zero button is pressed
   checkZeroButton();
@@ -225,6 +218,8 @@ void loop()
     PID_Calc(); // Do the calculations.
     pidFlag = false;
   }
+
+  dataReceivedCheck();
 
   // Update the motors
   updateMotors();
@@ -340,11 +335,62 @@ void readGyroscope()
 void updateMotors()
 {
   // Constrain the motor power
-  motorPower = constrain(motorPower, -500, 500);
+  motorPower = constrain(motorPower, -1000, 1000);
   StepperL.setSpeed(motorPower);
   StepperR.setSpeed(-motorPower);
 
   // Run the motors at the set speed
   StepperL.runSpeed();
   StepperR.runSpeed();
+}
+
+/***********************************dataReceivedCheck******************************************/
+/// @brief This function will check the incoming data and act on it.
+void dataReceivedCheck()
+{
+  if (newDataReceived)
+  {
+    if (strcmp(receivingData.dataText, "KD") == 0)
+    {
+      PID_KD = receivingData.dataValue;
+
+      if (DEBUG_SYSTEM)
+      {
+        Serial.print("The KD value is: ");
+        Serial.println(PID_KD);
+      }
+    }
+    else if (strcmp(receivingData.dataText, "KP") == 0)
+    {
+      PID_KP = receivingData.dataValue;
+
+      if (DEBUG_SYSTEM)
+      {
+        Serial.print("The KP value is: ");
+        Serial.println(PID_KP);
+      }
+    }
+    else if (strcmp(receivingData.dataText, "KI") == 0)
+    {
+      PID_KI = receivingData.dataValue;
+
+      if (DEBUG_SYSTEM)
+      {
+        Serial.print("The KI value is: ");
+        Serial.println(PID_KI);
+      }
+    }
+    else if (strcmp(receivingData.dataText, "ZERO") == 0)
+    {
+      // Reset the zero position of the gyro/accel
+      zeroAngle = currentAngle;
+
+      if (DEBUG_SYSTEM)
+      {
+        Serial.println("The zero position has been reset");
+      }
+    }
+
+    newDataReceived = false;
+  }
 }

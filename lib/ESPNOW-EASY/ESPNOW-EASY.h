@@ -23,6 +23,9 @@ extern uint8_t localPairingCycle; // This is a variable that will store the loca
 // Global variable to store the peer information
 extern esp_now_peer_info_t peerInfo;
 
+// Global variable to check if new data has been received
+extern bool newDataReceived;
+
 // Enum for debug setting
 enum DebugSetting
 {
@@ -59,7 +62,7 @@ typedef struct struct_message
 {
   uint8_t msgType;
   char dataText[32];
-  uint8_t dataValue;
+  float dataValue;
 } struct_message;
 
 //Struct for Gyroscope/Accelerometer
@@ -80,7 +83,7 @@ extern MessageType messageType;
 
 // Create 2 struct_message and 1 struct_pairing
 extern struct_message sendingData;   // data to send
-extern struct_message recievingData; // data received
+extern struct_message receivingData; // data received
 extern struct_pairing pairingData;   // pairing data
 
 // Create two structs for the gyroscope data
@@ -98,7 +101,7 @@ extern struct_gyro mpuSendingData;
 /// @param DEBUG_SETTING
 bool initESPNOW(uint8_t DEVICE_TYPE, uint8_t DEBUG_SETTING);
 
-/// @brief  Pairing: This will pair the master and slave depending on the selected device type. Data: This will receive data and save it to the recievingData struct. Outside of the library the user can access the data by using recievingData struct.
+/// @brief  Pairing: This will pair the master and slave depending on the selected device type. Data: This will receive data and save it to the receivingData struct. Outside of the library the user can access the data by using receivingData struct.
 /// @param mac_addr 
 /// @param incomingData 
 /// @param len 
@@ -134,7 +137,7 @@ void setReceivedMessageOnMonitor(bool state);
 /// @param messageType
 /// @param dataText
 /// @param dataValue
-void sendData(uint8_t messageType, char *dataText, uint8_t dataValue);
+void sendData(uint8_t messageType, char *dataText, float dataValue);
 
 /// @brief This function will send the gyroscope/Accel data to the other device. Using ESP-NOW.
 /// @param gyroX

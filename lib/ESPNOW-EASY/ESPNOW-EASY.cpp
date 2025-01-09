@@ -10,6 +10,9 @@ bool receivedMessageOnMonitor = false;
 // Global variable to store the pairing status
 bool pairingMode = false;
 
+// Global variable to check if new data has been received
+bool newDataReceived;
+
 uint8_t localPairingCycle = 0; // This is a variable that will store the local pairing cycle.
 
 // Global variable to store the peer information
@@ -390,6 +393,7 @@ bool initESPNOW(uint8_t DEVICE_TYPE, uint8_t DEBUG_SETTING)
 /// @param len
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len)
 {
+  newDataReceived = true;
   uint8_t type = incomingData[0]; // first message byte is the type of message
 
   switch (type)
@@ -551,7 +555,7 @@ void setReceivedMessageOnMonitor(bool state)
 /// @param messageType DATA or PAIRING
 /// @param dataText
 /// @param dataValue
-void sendData(uint8_t messageType, char *dataText, uint8_t dataValue)
+void sendData(uint8_t messageType, char *dataText, float dataValue)
 {
   sendingData.msgType = messageType;
   strcpy(sendingData.dataText, dataText);

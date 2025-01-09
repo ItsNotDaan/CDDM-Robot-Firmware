@@ -7,6 +7,7 @@
         "limits": "cpp",
         "mutex": "cpp",
         "streambuf": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "string": "cpp"
     }
 }
