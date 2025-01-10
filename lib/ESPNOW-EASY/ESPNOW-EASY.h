@@ -137,7 +137,7 @@ void setReceivedMessageOnMonitor(bool state);
 /// @param messageType
 /// @param dataText
 /// @param dataValue
-void sendData(uint8_t messageType, char *dataText, float dataValue);
+void sendData(uint8_t messageType, const char *dataText, float dataValue);
 
 /// @brief This function will send the gyroscope/Accel data to the other device. Using ESP-NOW.
 /// @param gyroX

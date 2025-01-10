@@ -555,7 +555,7 @@ void setReceivedMessageOnMonitor(bool state)
 /// @param messageType DATA or PAIRING
 /// @param dataText
 /// @param dataValue
-void sendData(uint8_t messageType, char *dataText, float dataValue)
+void sendData(uint8_t messageType, const char *dataText, float dataValue)
 {
   sendingData.msgType = messageType;
   strcpy(sendingData.dataText, dataText);

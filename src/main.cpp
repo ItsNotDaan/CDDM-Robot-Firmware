@@ -39,6 +39,18 @@
   0.7.1 - Added I2C issue fix. Now when the I2C is not connected the program will not crash. 
 */
 
+//Calibration/Offset values
+//  XAccel			              YAccel				                ZAccel			                 XGyro			         YGyro			        ZGyro
+// [849,849] --> [-16,181]	[-1493,-1492] --> [-9796,11]	[1510,1511] --> [13371,16385]	[33,34] --> [-5,1]	[-32,-31] --> [0,4]	[6,6] --> [0,1]
+
+// The values are as follows:
+// XAccel = 849
+// YAccel = -1493
+// ZAccel = 1510
+// XGyro = 33
+// YGyro = -32
+// ZGyro = 6
+
 // include libraries
 #include <Arduino.h>
 #include "ESPNOW-EASY.h"
@@ -47,6 +59,9 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
+
+#include "I2Cdev.h"
+#include "MPU6050.h"
 
 // include the AccelStepper library
 #include <AccelStepper.h>
@@ -57,7 +72,7 @@
 // ----- Declare Constants -----
 // Debug Settings (true or false)
 #define DEBUG_GYRO false
-#define DEBUG_MOTOR false
+#define DEBUG_MOTOR true
 #define DEBUG_ESPNOW false
 #define DEBUG_SYSTEM true
 
@@ -94,8 +109,10 @@
 
 // ----- Declare Objects -----
 // Create an object of the MPU6050 Objects
-Adafruit_MPU6050 mpu;
-sensors_event_t a, g, temp;
+// Adafruit_MPU6050 mpu;
+// sensors_event_t a, g, temp;
+
+MPU6050 mpu;
 
 // Create the stepper motor objects
 AccelStepper StepperR(AccelStepper::DRIVER, MCU_STEPPER_1_STP, MCU_STEPPER_1_DIR);
@@ -124,7 +141,9 @@ bool initMPUDone = false;
 bool buttonState = false;
 
 // PID Variables
-float accY, accZ, gyroX;
+// float accY, accZ, gyroX;
+
+int16_t accY, accZ, gyroX;
 volatile int motorPower, gyroRate;
 volatile float accAngle, gyroAngle, currentAngle, prevAngle = 0, error, prevError = 0, errorSum = 0;
 
@@ -136,6 +155,8 @@ float PID_KP = 0.0; // proportional gain
 float PID_KI = 0.0; // integral gain
 float PID_KD = 0.0; // derivative gain
 
+int motorPowerValue = 0;
+
 // Timer Flag
 bool pidFlag = false;
 
@@ -145,7 +166,7 @@ void setup()
   Serial.begin(115200); // Start the serial monitor at 115200 baud
 
   // Wire
-  Wire.begin(MCU_SDA, MCU_SCL, 1000000); // Start the I2C communication
+  Wire.begin(MCU_SDA, MCU_SCL); // Start the I2C communication
 
   // Button
   pinMode(MCU_BUTTON, INPUT_PULLUP);
@@ -177,20 +198,36 @@ void setup()
   StepperL.setAcceleration(STEPPER_ACCELERATION);
 
   // Initialize the MPU6050 and set offset values
-  if (mpu.begin())
-  {
-    Serial.println("MPU6050 Found!");
+  // if (mpu.begin())
+  // {
+  //   Serial.println("MPU6050 Found!");
 
-    mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-    mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-    mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  //   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  //   mpu.setGyroRange(MPU6050_RANGE_2000_DEG);
+  //   // mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 
-    initMPUDone = true; // Set the initialization flag
-  }
-  else
-  {
-    Serial.println("Failed to find MPU6050 chip");
-  }
+  //   //Set the offset values
+  //   mpu.setXAccelOffset(849);
+    
+
+  //   initMPUDone = true; // Set the initialization flag
+  // }
+  // else
+  // {
+  //   Serial.println("Failed to find MPU6050 chip");
+  // }
+
+  // MPU6050
+  mpu.initialize();
+  //Offsets
+  mpu.setXAccelOffset(849);
+  mpu.setYAccelOffset(-1493);
+  mpu.setZAccelOffset(1510);
+  mpu.setXGyroOffset(33);
+  mpu.setYGyroOffset(-32);
+  mpu.setZGyroOffset(6);
+
+  initMPUDone = true;
 
   // OnTimer Init
   init_TIMER();
@@ -313,13 +350,13 @@ void PID_Calc()
   {
     Serial.print("Current Angle: ");
     Serial.println(currentAngle);
-    Serial.print("Target Angle: ");
-    Serial.println(targetAngle);
-    Serial.print("Motor Power: ");
-    Serial.println(motorPower);
-    Serial.println("Error: ");
-    Serial.println(error);
-    Serial.println("");
+    // Serial.print("Target Angle: ");
+    // Serial.println(targetAngle);
+    // Serial.print("Motor Power: ");
+    // Serial.println(motorPower);
+    // Serial.println("Error: ");
+    // Serial.println(error);
+    // Serial.println("");
   }
 }
 
@@ -328,11 +365,15 @@ void PID_Calc()
 void readGyroscope()
 {
   // Read the accelerometer
-  mpu.getEvent(&a, &g, &temp);
+  // mpu.getEvent(&a, &g, &temp);
 
-  accY = a.acceleration.y;
-  accZ = a.acceleration.z;
-  gyroX = g.gyro.x;
+  // accY = a.acceleration.y;
+  // accZ = a.acceleration.z;
+  // gyroX = g.gyro.x;
+
+  accY = mpu.getAccelerationY();
+  accZ = mpu.getAccelerationZ();
+  gyroX = mpu.getRotationX();
 
   if (DEBUG_GYRO)
   {
@@ -351,7 +392,7 @@ void readGyroscope()
 void updateMotors()
 {
   // Constrain the motor power
-  motorPower = constrain(motorPower, -1000, 1000);
+  motorPower = constrain(motorPower, -motorPowerValue, motorPowerValue);
   StepperL.setSpeed(motorPower);
   StepperR.setSpeed(-motorPower);
 
@@ -418,6 +459,17 @@ void dataReceivedCheck()
       {
         Serial.print("The LED blue value color is: ");
         Serial.println(blueValue);
+      }
+    }
+    //Motor Power
+    else if (strcmp(receivingData.dataText, "MOTOR") == 0)
+    {
+      motorPowerValue = receivingData.dataValue;
+
+      if (DEBUG_SYSTEM)
+      {
+        Serial.print("The motor power value is: ");
+        Serial.println(motorPowerValue);
       }
     }
     else
