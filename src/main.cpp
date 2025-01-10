@@ -36,6 +36,7 @@
   V5(0.5) - Working motors and gyroscope with zerobutton. The timer is working as well. ESPNOW is working as well.
   0.6 - Cleanin up the code. Adding comments. TO-DO: PID tuning.
   0.7 - Values on the robot can be changed using the controller. dataReceivedCheck() function is added.
+  0.7.1 - Added I2C issue fix. Now when the I2C is not connected the program will not crash. 
 */
 
 // include libraries
@@ -85,7 +86,7 @@
 #define PID_SAMPLE_TIME 0.005 // 5 milliseconds (in seconds)
 
 // ESP-NOW settings
-#define DEVICE_TYPE SLAVE      // Device type (MASTER or SLAVE)
+#define DEVICE_TYPE SLAVE       // Device type (MASTER or SLAVE)
 #define DEBUG_SETTING DEBUG_OFF // Debug setting (DEBUG_ON or DEBUG_OFF)
 
 // Timer settings (Set alarm to call onTimer function every second (value in microseconds).)
@@ -116,6 +117,9 @@ void updateMotors();
 void dataReceivedCheck();
 
 // ----- Declare Global Variables -----
+// I2C initialization variables
+bool initMPUDone = false; 
+
 // Button Variable
 bool buttonState = false;
 
@@ -173,11 +177,20 @@ void setup()
   StepperL.setAcceleration(STEPPER_ACCELERATION);
 
   // Initialize the MPU6050 and set offset values
-  mpu.begin();
+  if (mpu.begin())
+  {
+    Serial.println("MPU6050 Found!");
 
-  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+    mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+    mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+    mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+
+    initMPUDone = true; // Set the initialization flag
+  }
+  else
+  {
+    Serial.println("Failed to find MPU6050 chip");
+  }
 
   // OnTimer Init
   init_TIMER();
@@ -210,7 +223,10 @@ void loop()
   checkZeroButton();
 
   // Read the accelerometer
-  readGyroscope();
+  if (initMPUDone)
+  {
+    readGyroscope();
+  }
 
   // Check if the timer has pulled the flag up.
   if (pidFlag)
@@ -350,7 +366,7 @@ void dataReceivedCheck()
 {
   if (newDataReceived)
   {
-    if (strcmp(receivingData.dataText, "KD") == 0)
+    if (strcmp(receivingData.dataText, "KD") == 0) // Change the KD value.
     {
       PID_KD = receivingData.dataValue;
 
@@ -360,7 +376,7 @@ void dataReceivedCheck()
         Serial.println(PID_KD);
       }
     }
-    else if (strcmp(receivingData.dataText, "KP") == 0)
+    else if (strcmp(receivingData.dataText, "KP") == 0) // Change the KP value.
     {
       PID_KP = receivingData.dataValue;
 
@@ -370,7 +386,7 @@ void dataReceivedCheck()
         Serial.println(PID_KP);
       }
     }
-    else if (strcmp(receivingData.dataText, "KI") == 0)
+    else if (strcmp(receivingData.dataText, "KI") == 0) // Change the KI value.
     {
       PID_KI = receivingData.dataValue;
 
@@ -380,14 +396,35 @@ void dataReceivedCheck()
         Serial.println(PID_KI);
       }
     }
-    else if (strcmp(receivingData.dataText, "ZERO") == 0)
+    else if (strcmp(receivingData.dataText, "ZERO") == 0) // Set the zero position.
     {
-      // Reset the zero position of the gyro/accel
+      // Reset the zero position of the gyro/accel.
       zeroAngle = currentAngle;
 
       if (DEBUG_SYSTEM)
       {
         Serial.println("The zero position has been reset");
+      }
+    }
+    else if (strcmp(receivingData.dataText, "LED") == 0) // Check for a LED color
+    {
+      int blueValue = receivingData.dataValue;
+
+      leds[2] = CRGB(0, 0, blueValue);
+
+      FastLED.show();
+
+      if (DEBUG_SYSTEM)
+      {
+        Serial.print("The LED blue value color is: ");
+        Serial.println(blueValue);
+      }
+    }
+    else
+    {
+      if (DEBUG_SYSTEM)
+      {
+        Serial.println("No valid data received");
       }
     }
 
