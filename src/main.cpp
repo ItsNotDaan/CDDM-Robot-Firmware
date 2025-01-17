@@ -37,6 +37,7 @@
   0.6 - Cleanin up the code. Adding comments. TO-DO: PID tuning.
   0.7 - Values on the robot can be changed using the controller. dataReceivedCheck() function is added.
   0.7.1 - Added I2C issue fix. Now when the I2C is not connected the program will not crash. 
+  0.7.2 - Changed the MPU6050 library to the I2Cdev and MPU6050 library. This is because the Adafruit library is not able to change the offsets.
 */
 
 //Calibration/Offset values
@@ -326,12 +327,14 @@ void checkZeroButton()
 /// @brief This function will do the PID calculations.
 void PID_Calc()
 {
-
+  // Angle Complementary Filter (PDF Slide 14)
   // Calculate the angle of inclination using the accelerometer and gyroscope
   // accY needs to be reversed to create the correct front.
-  accAngle = atan2(-accY, accZ) * RAD_TO_DEG;
-  gyroRate = map(gyroX, -32768, 32767, -250, 250);
-  gyroAngle = (float)gyroRate * PID_SAMPLE_TIME;
+  accAngle = atan2(-accY, accZ) * RAD_TO_DEG; //Find the degree of inclination of the robot using the accelerometer
+  //The gyro outputs a range of 16-bit (32768 to -32767) values. The gyro rate is mapped to a value between -250 and 250
+  gyroRate = map(gyroX, -32768, 32767, -250, 250); 
+  // The gyro angle is calculated by multiplying the gyro rate with the sample time
+  gyroAngle = (float)gyroRate * PID_SAMPLE_TIME; // gyroX * PID_SAMPLE_TIME; =  Gyro * dT
   currentAngle = 0.9934 * (prevAngle + gyroAngle) + 0.0066 * accAngle;
 
   targetAngle = wishedAngle + zeroAngle;
@@ -342,7 +345,7 @@ void PID_Calc()
   errorSum = constrain(errorSum, -300, 300);
 
   // Calculate the output from P, I and D values
-  motorPower = PID_KP * error + PID_KI * errorSum * PID_SAMPLE_TIME - PID_KD * (currentAngle - prevAngle) / PID_SAMPLE_TIME;
+  motorPower = (PID_KP * error) + (PID_KI * errorSum * PID_SAMPLE_TIME) - (PID_KD * (currentAngle - prevAngle) / PID_SAMPLE_TIME);
   prevAngle = currentAngle;
 
   // DEBUG information
