@@ -38,6 +38,7 @@
   0.7 - Values on the robot can be changed using the controller. dataReceivedCheck() function is added.
   0.7.1 - Added I2C issue fix. Now when the I2C is not connected the program will not crash. 
   0.7.2 - Changed the MPU6050 library to the I2Cdev and MPU6050 library. This is because the Adafruit library is not able to change the offsets.
+  0.7.3 - Fix: Changed the GyroX value to -GyroX, the slow movement is now fixed.
 */
 
 //Calibration/Offset values
@@ -75,8 +76,7 @@
 #define DEBUG_GYRO false
 #define DEBUG_MOTOR true
 #define DEBUG_ESPNOW false
-#define DEBUG_SYSTEM true
-
+#define DEBUG_SYSTEM false
 // GPIO Pins
 #define MCU_SCL GPIO_NUM_6
 #define MCU_SDA GPIO_NUM_7
@@ -199,27 +199,8 @@ void setup()
   StepperL.setAcceleration(STEPPER_ACCELERATION);
 
   // Initialize the MPU6050 and set offset values
-  // if (mpu.begin())
-  // {
-  //   Serial.println("MPU6050 Found!");
+  mpu.initialize(); //Gyro = +/-250 degrees/sec, Accel = +/-2G
 
-  //   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  //   mpu.setGyroRange(MPU6050_RANGE_2000_DEG);
-  //   // mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-
-  //   //Set the offset values
-  //   mpu.setXAccelOffset(849);
-    
-
-  //   initMPUDone = true; // Set the initialization flag
-  // }
-  // else
-  // {
-  //   Serial.println("Failed to find MPU6050 chip");
-  // }
-
-  // MPU6050
-  mpu.initialize();
   //Offsets
   mpu.setXAccelOffset(849);
   mpu.setYAccelOffset(-1493);
@@ -236,6 +217,7 @@ void setup()
   delay(2000);
 
   FastLED.clear(true);
+  Serial.println("Setup done");
 }
 
 /*****************************************LOOP*************************************************/
@@ -332,7 +314,7 @@ void PID_Calc()
   // accY needs to be reversed to create the correct front.
   accAngle = atan2(-accY, accZ) * RAD_TO_DEG; //Find the degree of inclination of the robot using the accelerometer
   //The gyro outputs a range of 16-bit (32768 to -32767) values. The gyro rate is mapped to a value between -250 and 250
-  gyroRate = map(gyroX, -32768, 32767, -250, 250); 
+  gyroRate = map(-gyroX, -32768, 32767, -250, 250); 
   // The gyro angle is calculated by multiplying the gyro rate with the sample time
   gyroAngle = (float)gyroRate * PID_SAMPLE_TIME; // gyroX * PID_SAMPLE_TIME; =  Gyro * dT
   currentAngle = 0.9934 * (prevAngle + gyroAngle) + 0.0066 * accAngle;
@@ -359,6 +341,11 @@ void PID_Calc()
     // Serial.println(motorPower);
     // Serial.println("Error: ");
     // Serial.println(error);
+    // Serial.print("Acc angle: ");
+    // Serial.println(accAngle);
+    // Serial.print("Gyro angle: ");
+    // Serial.println(gyroAngle);
+
     // Serial.println("");
   }
 }
